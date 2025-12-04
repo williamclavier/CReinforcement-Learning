@@ -75,23 +75,13 @@ def capture_bluestacks_screenshot() -> Optional[np.ndarray]:
             print("Invalid window dimensions")
             return None
 
-        # Capture the window region
-        region = CG.CGRectMake(x, y, width, height)
+        # Capture the specific window by ID
         image = CG.CGWindowListCreateImage(
-            region,
-            CG.kCGWindowListOptionOnScreenBelowWindow,
+            CG.CGRectNull,  # Null rect = capture entire window
+            CG.kCGWindowListOptionIncludingWindow,  # Capture this specific window
             bluestacks_window['kCGWindowNumber'],
             CG.kCGWindowImageBoundsIgnoreFraming
         )
-
-        if image is None:
-            # Fallback: capture by window ID
-            image = CG.CGWindowListCreateImage(
-                CG.CGRectNull,
-                CG.kCGWindowListOptionIncludingWindow,
-                bluestacks_window['kCGWindowNumber'],
-                CG.kCGWindowImageBoundsIgnoreFraming
-            )
 
         if image is None:
             print("Failed to capture window image")
