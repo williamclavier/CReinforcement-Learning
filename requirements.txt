@@ -1,0 +1,23 @@
+# Deep Learning - pinned versions from KataCR for compatibility
+torch==2.2.2
+torchvision==0.17.2
+ultralytics==8.1.24
+
+# Computer Vision
+opencv-python==4.9.0.80
+Pillow==10.3.0
+
+# OCR - 2.8.x removes opencv version constraint
+paddlepaddle==2.6.2
+paddleocr==2.8.1
+
+# Scientific Computing
+numpy==1.26.4
+scipy==1.13.1
+
+# macOS Screenshot Capture
+pyautogui>=0.9.54
+pyobjc-framework-Quartz>=9.0
+
+# Utilities
+tqdm==4.66.2
