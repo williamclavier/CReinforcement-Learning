@@ -112,6 +112,7 @@ class GameState:
 
     def __init__(self):
         self.time: float = 0
+        self.elixir: int = 0  # Current elixir (0-10)
         self.units: List[UnitInfo] = []
         self.towers: Dict[str, dict] = {}
         self.cards: List[CardInfo] = []  # 4 cards in hand
@@ -140,6 +141,7 @@ class GameState:
         """Convert state to dictionary."""
         return {
             'time': self.time,
+            'elixir': self.elixir,
             'frame_count': self.frame_count,
             'units': [u.to_dict() for u in self.units],
             'towers': self.towers,

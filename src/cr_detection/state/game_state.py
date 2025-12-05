@@ -77,6 +77,15 @@ class GameStateDetector:
                 except Exception as e2:
                     print(f"OCR disabled: {e2}")
 
+        # Elixir detector (pixel-based, fast)
+        self.elixir_detector = None
+        try:
+            from ..elixir import ElixirDetector
+            self.elixir_detector = ElixirDetector()
+            print("Elixir detector initialized!")
+        except Exception as e:
+            print(f"Elixir detection disabled: {e}")
+
         # Card detector (optional)
         self.card_detector = None
         if use_cards:
@@ -134,11 +143,20 @@ class GameStateDetector:
             except Exception:
                 pass
 
+        # Detect elixir from bar color
+        elixir = 0
+        if self.elixir_detector is not None:
+            try:
+                elixir = self.elixir_detector.detect(image)
+            except Exception:
+                pass
+
         # Detect units from part2 (arena)
         arena_result = self.detector.detect(self._last_arena, rgb=False)
 
         # Build state
         state = self.state_builder.update(arena_result, time=time)
+        state.elixir = elixir
 
         # Detect cards in hand (uses full screenshot)
         if self.card_detector is not None:

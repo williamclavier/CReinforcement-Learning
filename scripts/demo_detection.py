@@ -202,6 +202,7 @@ def print_state(state):
     print("=" * 50)
 
     print(f"\nTime: {state.time:.1f}s")
+    print(f"Elixir: {state.elixir}")
     print(f"Frame: {state.frame_count}")
 
     friendly = state.get_friendly_units()
@@ -251,7 +252,7 @@ def print_state_compact(state, verbose=True):
             cards_str = f" | Cards: {', '.join(card_names)}"
 
     # Main summary line
-    print(f"[{timestamp}] Time: {state.time:5.1f}s | Friendly: {len(friendly):2d} | Enemy: {len(enemy):2d}{cards_str}", flush=True)
+    print(f"[{timestamp}] Time: {state.time:5.1f}s | Elixir: {state.elixir:2d} | Friendly: {len(friendly):2d} | Enemy: {len(enemy):2d}{cards_str}", flush=True)
 
     if verbose and (friendly or enemy):
         # Show detected units
