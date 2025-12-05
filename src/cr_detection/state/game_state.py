@@ -12,7 +12,7 @@ from ..capture.bluestacks import BluestacksCapture, save_screenshot
 from ..models.yolo_detector import ComboDetector, create_detector
 from ..ocr.paddle_ocr import OCR, create_ocr
 from ..processing.split_part import process_part, split_screenshot
-from .state_builder import StateBuilder, GameState, UnitInfo
+from .state_builder import StateBuilder, GameState, UnitInfo, CardInfo
 
 
 class GameStateDetector:
@@ -43,7 +43,8 @@ class GameStateDetector:
         use_tracking: bool = True,
         use_gpu: bool = True,
         use_quartz: bool = True,
-        use_ocr: bool = True
+        use_ocr: bool = True,
+        use_cards: bool = True
     ):
         """
         Initialize the game state detector.
@@ -54,12 +55,37 @@ class GameStateDetector:
             use_gpu: Use GPU for inference.
             use_quartz: Use Quartz for macOS screenshot capture.
             use_ocr: Enable OCR for time detection (can be slow to initialize).
+            use_cards: Enable card detection for hand cards.
         """
         # Initialize components
         self.capture = BluestacksCapture(use_quartz=use_quartz)
         self.detector = create_detector(model_paths, use_tracking=use_tracking)
-        self.ocr = create_ocr(use_gpu=use_gpu) if use_ocr else None
-        self.state_builder = StateBuilder(ocr=self.ocr)
+        self.state_builder = StateBuilder(ocr=None)  # OCR handled separately
+
+        # OCR for timer (prefer Apple Vision, fallback to PaddleOCR)
+        self.ocr = None
+        if use_ocr:
+            try:
+                from ..ocr.vision_ocr import VisionOCR
+                self.ocr = VisionOCR()
+                print("Vision OCR initialized!")
+            except Exception as e:
+                print(f"Vision OCR failed ({e}), trying PaddleOCR...")
+                try:
+                    self.ocr = create_ocr(use_gpu=use_gpu)
+                    print("PaddleOCR initialized!")
+                except Exception as e2:
+                    print(f"OCR disabled: {e2}")
+
+        # Card detector (optional)
+        self.card_detector = None
+        if use_cards:
+            try:
+                from ..cards.card_detector import CardDetector
+                self.card_detector = CardDetector()
+                print("Card detector initialized!")
+            except Exception as e:
+                print(f"Card detection disabled: {e}")
 
         self._last_screenshot: Optional[np.ndarray] = None
         self._last_arena: Optional[np.ndarray] = None  # part2 - where detections happen
@@ -98,17 +124,35 @@ class GameStateDetector:
         parts = split_screenshot(image)
         self._last_arena = parts['part2']
 
-        # Detect time from part1
+        # Detect time from timer region (top right of screen)
+        time = 0.0
         if self.ocr is not None:
-            time = self.ocr.process_part1(parts['part1'], pil=False)
-        else:
-            time = 0.0
+            try:
+                h, w = image.shape[:2]
+                timer_region = image[0:int(h*0.09), int(w*0.6):int(w*0.95)]
+                time = self.ocr.process_part1(timer_region, pil=False)
+            except Exception:
+                pass
 
         # Detect units from part2 (arena)
         arena_result = self.detector.detect(self._last_arena, rgb=False)
 
         # Build state
         state = self.state_builder.update(arena_result, time=time)
+
+        # Detect cards in hand (uses full screenshot)
+        if self.card_detector is not None:
+            try:
+                card_results = self.card_detector.detect(image)
+                for card in card_results:
+                    state.cards.append(CardInfo(
+                        slot=card['slot'],
+                        name=card['name'],
+                        confidence=card['confidence']
+                    ))
+            except Exception as e:
+                pass  # Card detection failed, continue without cards
+
         self._last_state = state
 
         return state

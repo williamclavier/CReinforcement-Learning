@@ -95,6 +95,8 @@ def main():
     parser.add_argument('--no-gpu', action='store_true', help='Disable GPU')
     parser.add_argument('--no-ocr', action='store_true',
                        help='Disable OCR (faster startup, no time detection)')
+    parser.add_argument('--no-cards', action='store_true',
+                       help='Disable card detection')
     parser.add_argument('--show', action='store_true',
                        help='Show OpenCV window with detection visualization')
     args = parser.parse_args()
@@ -116,7 +118,8 @@ def main():
     detector = GameStateDetector(
         use_tracking=not args.no_tracking,
         use_gpu=not args.no_gpu,
-        use_ocr=not args.no_ocr
+        use_ocr=not args.no_ocr,
+        use_cards=not args.no_cards
     )
     print("Detector initialized!")
 
@@ -226,6 +229,11 @@ def print_state(state):
             side = "Friendly" if tower['bel'] == 0 else "Enemy"
             print(f"  - {tower['type']} ({side})")
 
+    if state.cards:
+        print("\nHand Cards:")
+        for card in state.cards:
+            print(f"  Slot {card.slot}: {card.name} ({card.confidence:.2f})")
+
     print("\n" + "=" * 50)
 
 
@@ -235,8 +243,15 @@ def print_state_compact(state, verbose=True):
     enemy = state.get_enemy_units()
     timestamp = time.strftime("%H:%M:%S")
 
+    # Cards summary
+    cards_str = ""
+    if state.cards:
+        card_names = [c.name for c in state.cards if c.name != 'unknown']
+        if card_names:
+            cards_str = f" | Cards: {', '.join(card_names)}"
+
     # Main summary line
-    print(f"[{timestamp}] Time: {state.time:5.1f}s | Friendly: {len(friendly):2d} | Enemy: {len(enemy):2d}", flush=True)
+    print(f"[{timestamp}] Time: {state.time:5.1f}s | Friendly: {len(friendly):2d} | Enemy: {len(enemy):2d}{cards_str}", flush=True)
 
     if verbose and (friendly or enemy):
         # Show detected units

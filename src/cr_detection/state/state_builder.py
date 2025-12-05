@@ -78,6 +78,27 @@ class UnitInfo:
         }
 
 
+class CardInfo:
+    """Information about a card in the player's hand."""
+
+    def __init__(
+        self,
+        slot: int,
+        name: str,
+        confidence: float = 0.0
+    ):
+        self.slot = slot  # 0-3
+        self.name = name
+        self.confidence = confidence
+
+    def to_dict(self) -> dict:
+        return {
+            'slot': self.slot,
+            'name': self.name,
+            'confidence': self.confidence,
+        }
+
+
 class GameState:
     """
     Complete game state at a single frame.
@@ -86,12 +107,14 @@ class GameState:
         time: Game time in seconds (0-300).
         units: List of detected units.
         towers: Dictionary of tower states.
+        cards: List of cards in hand (4 slots).
     """
 
     def __init__(self):
         self.time: float = 0
         self.units: List[UnitInfo] = []
         self.towers: Dict[str, dict] = {}
+        self.cards: List[CardInfo] = []  # 4 cards in hand
         self.frame_count: int = 0
 
     def get_friendly_units(self) -> List[UnitInfo]:
@@ -109,6 +132,10 @@ class GameState:
             return []
         return [u for u in self.units if u.cls == cls_idx]
 
+    def get_card_names(self) -> List[str]:
+        """Get list of card names in hand."""
+        return [c.name for c in self.cards]
+
     def to_dict(self) -> dict:
         """Convert state to dictionary."""
         return {
@@ -116,6 +143,7 @@ class GameState:
             'frame_count': self.frame_count,
             'units': [u.to_dict() for u in self.units],
             'towers': self.towers,
+            'cards': [c.to_dict() for c in self.cards],
             'friendly_count': len(self.get_friendly_units()),
             'enemy_count': len(self.get_enemy_units()),
         }
